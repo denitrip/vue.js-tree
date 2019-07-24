@@ -43,7 +43,7 @@
         return this.item.children ? this.item.children.length : 0;
       },
       isIndeterminateState() {
-        return (this.childrensSelected > 0 && this.childrensSelected < this.numOfChildrens) || (this.isSelected && !this.childrensSelected && this.numOfChildrens > 0);
+        return (this.childrensSelected > 0 && this.childrensSelected < this.numOfChildrens);
       },
       isNotIndeterminateWithSelections() {
         return this.numOfChildrens && !this.isSelected && this.numOfChildrens === this.childrensSelected && !this.isIndeterminateState && !this.childrensIndeterminateState;
@@ -53,18 +53,32 @@
       }
     },
     methods: {
+      test() {
+        this.isSelected = !this.isSelected;
+      },
       toggle() {
         if (this.isBranch) {
           this.isOpen = !this.isOpen
         }
       },
-      setChildrenSelection() {
+      setChildrenSelection(e) {
+        if (this.nestingState) {
+          this.setSelection(false);
+          this.isSelected = e.target.checked;
+        }
+        else {
+          this.setSelection(true);
+        }
         this.childrensSelected = this.isSelected ? this.numOfChildrens : 0;
         this.$emit('countSelectedChildrens', this.isSelected);
       },
       countSelectedChildrens(state) {
-        if (state) this.childrensSelected++;
-        else this.childrensSelected--;
+        if (state && this.childrensSelected < this.numOfChildrens) {
+          this.childrensSelected++;
+        }
+        else if (this.childrensSelected > 0) {
+          this.childrensSelected--;
+        }
       },
       checkboxStatusIndeterminate(state) {
         if (this.$refs.child) {
@@ -86,9 +100,6 @@
       }
     },
     watch: {
-      isParentSelected: function (parentState) {
-        this.setSelection(parentState);
-      },
       isParentOpen: function (parentState) {
         this.isOpen = parentState ? parentState : false;
       },
