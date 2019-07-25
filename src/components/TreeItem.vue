@@ -12,8 +12,8 @@
         v-for="(child, index) in item.children"
         :key="index"
         :item="child"
-        :isParentSelected="isSelected"
         :isParentOpen="isOpen"
+        :isParentSelected="isSelected"
         :isSingleSelectedParent="isSingleSelectedItem"
         @countSelectedChildrens="countSelectedChildrens"
         @checkboxStatusIndeterminate="checkboxStatusIndeterminate"
@@ -25,7 +25,7 @@
 <script>
   export default {
     name: "TreeItem",
-    props: ['item', 'isParentSelected', 'isParentOpen'],
+    props: ['item', 'isParentOpen', 'isParentSelected'],
     data() {
       return {
         isOpen: false,
@@ -46,10 +46,13 @@
         return (this.childrensSelected > 0 && this.childrensSelected < this.numOfChildrens);
       },
       isNotIndeterminateWithSelections() {
-        return this.numOfChildrens && !this.isSelected && this.numOfChildrens === this.childrensSelected && !this.isIndeterminateState && !this.childrensIndeterminateState;
+        return (this.numOfChildrens && !this.isSelected && this.numOfChildrens === this.childrensSelected && !this.isIndeterminateState && !this.childrensIndeterminateState)
       },
       nestingState() {
-        return this.childrensIndeterminateState || this.isNotIndeterminateWithSelections || this.isIndeterminateState;
+        return this.childrensIndeterminateState || this.isNotIndeterminateWithSelections || this.isIndeterminateState
+      },
+      isNoSelectionsInside() {
+        return this.isSelected && this.isParentSelected && this.numOfChildrens && !this.childrensSelected
       }
     },
     methods: {
@@ -62,27 +65,28 @@
         }
       },
       setChildrenSelection(e) {
-        if (this.nestingState) {
+        if (this.nestingState || (this.isSelected && this.numOfChildrens === this.childrensSelected)) {
           this.setSelection(false);
           this.isSelected = e.target.checked;
         }
         else {
           this.setSelection(true);
+          this.isSelected = e.target.checked;
         }
         this.childrensSelected = this.isSelected ? this.numOfChildrens : 0;
-        this.$emit('countSelectedChildrens', this.isSelected);
+        this.$emit('countSelectedChildrens', e.target.checked);
       },
       countSelectedChildrens(state) {
         if (state && this.childrensSelected < this.numOfChildrens) {
           this.childrensSelected++;
         }
-        else if (this.childrensSelected > 0) {
+        else if (!state && this.childrensSelected > 0) {
           this.childrensSelected--;
         }
       },
       checkboxStatusIndeterminate(state) {
         if (this.$refs.child) {
-          this.childrensIndeterminateState = !!this.$refs.child.find(e => e.isIndeterminateState || e.childrensIndeterminateState || e.isNotIndeterminateWithSelections);
+          this.childrensIndeterminateState = !!this.$refs.child.find(e => e.isIndeterminateState || e.childrensIndeterminateState || e.isNotIndeterminateWithSelections || (e.isSelected && e.isNoSelectionsInside));
         } else {
           this.childrensIndeterminateState = state;
         }
@@ -110,6 +114,9 @@
         this.$emit('checkboxStatusIndeterminate', state);
       },
       isNotIndeterminateWithSelections: function (state) {
+        this.$emit('checkboxStatusIndeterminate', state);
+      },
+      isNoSelectionsInside: function (state) {
         this.$emit('checkboxStatusIndeterminate', state);
       }
     }
